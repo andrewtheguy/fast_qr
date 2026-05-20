@@ -94,13 +94,11 @@ pub fn place_on_matrix(
     let mut qr = default::create_matrix(version);
     place_on_matrix_data(&mut qr, structure_as_binarystring);
 
-    let transpose = default::transpose(&qr);
-
     for mask in MASKS {
         let mut copy = qr.clone();
-        let copy_transpose = transpose.clone();
 
         datamasking::mask(&mut copy, mask);
+        let copy_transpose = default::transpose(&copy);
         let matrix_score = score::score(&copy, &copy_transpose);
         if matrix_score < best_score {
             best_score = matrix_score;

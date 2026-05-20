@@ -141,7 +141,7 @@ pub(crate) fn encode_byte(compact: &mut CompactQR, input: &[u8], cci_bits: usize
 
 /// Adds needed terminator padding, terminating the data `BitString`, referring to 8.4.8 of the spec.
 fn add_terminator(compact: &mut CompactQR, data_bits: usize) {
-    let len = data_bits - compact.len();
+    let len = data_bits.saturating_sub(compact.len());
     let len = core::cmp::min(len, 4);
 
     compact.push_bits(0, len);

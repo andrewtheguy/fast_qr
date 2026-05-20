@@ -39,10 +39,6 @@ pub fn create_matrix(version: Version) -> QRCode {
     // Format information is not placed on the matrix yet
     // But we fill it anyway with garbage data to make it easier for placement
     {
-        if (version as usize) < (Version::V01 as usize) {
-            return qr;
-        }
-
         for i in 0..=5 {
             // Top left
             qr[8][i] = Module::format(Module::LIGHT);
