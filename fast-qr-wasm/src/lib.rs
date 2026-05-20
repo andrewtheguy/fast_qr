@@ -966,9 +966,8 @@ mod tests {
 
     #[test]
     fn svg_with_both_width_and_height() {
-        let svg =
-            generate_qr_svg_internal(b"dimension-test", 4, "M", false, Some(200), Some(300))
-                .expect("SVG with dimensions should succeed");
+        let svg = generate_qr_svg_internal(b"dimension-test", 4, "M", false, Some(200), Some(300))
+            .expect("SVG with dimensions should succeed");
         assert_valid_svg(&svg);
         let tag = extract_svg_tag(&svg);
         assert!(

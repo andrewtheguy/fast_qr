@@ -1,4 +1,3 @@
-mod bytes;
 mod compact;
 mod datamasking;
 mod default;

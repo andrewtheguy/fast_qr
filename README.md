@@ -1,108 +1,24 @@
-<div style="display: flex; justify-content: center">
-  <img src="assets/banner.svg"  alt="Example qr for website example.com"/>
-</div>
+# fast_qr wasm workspace
 
-`fast_qr` is approximately 6-7 times faster than `qrcode`, see [benchmarks](#benchmarks)
+This workspace is trimmed around the `fast-qr-wasm` crate. The parent `fast_qr`
+crate now provides only the QR matrix builder and simple SVG renderer needed by
+that wrapper; PNG encoding and JavaScript bindings live in `fast-qr-wasm`.
 
-You can create a QR as
+## Build
 
-- [x] Raw matrix, well suited for custom usage
-- [x] Vectorized image, well suited for web usage
-- [x] Image, well suited for mobile / print usage
-
-# Usage
-
-## Rust
-
-### Examples
-
-You can run the examples with:
-
-```sh
-cargo run --example simple
-cargo run --example svg -F svg
-cargo run --example image -F image
+```bash
+cargo test --workspace
+cargo build --target wasm32-unknown-unknown -p fast-qr-wasm --release
 ```
 
-They are all explained in detail below.
+For packaged web output, build the wasm crate with `wasm-pack`:
 
-### Converts `QRCode` to Unicode
-
-```rust
-use fast_qr::convert::ConvertError;
-use fast_qr::qr::QRBuilder;
-
-fn main() -> Result<(), ConvertError> {
-    // QRBuilder::new can fail if content is too big for version,
-    // please check before unwrapping.
-    let qrcode = QRBuilder::new("https://example.com/")
-        .build()
-        .unwrap();
-
-    let str = qrcode.to_str(); // .print() exists
-    println!("{}", str);
-
-    Ok(())
-}
+```bash
+cd fast-qr-wasm
+wasm-pack build --target web --release
 ```
 
-### Converts `QRCode` to SVG [docs.rs](https://docs.rs/fast_qr/latest/fast_qr/convert/svg/index.html)
-
-_Note: It requires the `svg` feature_
-
-```rust
-use fast_qr::convert::ConvertError;
-use fast_qr::convert::{svg::SvgBuilder, Builder, Shape};
-use fast_qr::qr::QRBuilder;
-
-fn main() -> Result<(), ConvertError> {
-    // QRBuilder::new can fail if content is too big for version,
-    // please check before unwrapping.
-    let qrcode = QRBuilder::new("https://example.com/")
-        .build()
-        .unwrap();
-
-    let _svg = SvgBuilder::default()
-        .shape(Shape::RoundedSquare)
-        .to_file(&qrcode, "out.svg");
-
-    Ok(())
-}
-```
-
-### Converts `QRCode` to an image [docs.rs](https://docs.rs/fast_qr/latest/fast_qr/convert/image/index.html)
-
-_Note: It requires the `image` feature_
-
-```rust
-use fast_qr::convert::ConvertError;
-use fast_qr::convert::{image::ImageBuilder, Builder, Shape};
-use fast_qr::qr::QRBuilder;
-
-fn main() -> Result<(), ConvertError> {
-    // QRBuilder::new can fail if content is too big for version,
-    // please check before unwrapping.
-    let qrcode = QRBuilder::new("https://example.com/")
-        .build()
-        .unwrap();
-
-    let _img = ImageBuilder::default()
-        .shape(Shape::RoundedSquare)
-        .background_color([255, 255, 255, 0]) // Handles transparency
-        .fit_width(600)
-        .to_file(&qrcode, "out.png");
-
-    Ok(())
-}
-```
-
-## JavaScript / Typescript
-
-WASM bindings live in the [`fast-qr-wasm`](./fast-qr-wasm) sub-crate. The exposed API
-is minimal and functional: three top-level helpers that take raw bytes and return
-either a PNG, an SVG string, or a packed module matrix.
-
-### Usage
+## JavaScript API
 
 ```js
 import init, {
@@ -114,45 +30,10 @@ import init, {
 await init();
 
 const data = new TextEncoder().encode('https://fast-qr.com');
-
-// SVG (optional explicit width / height attributes)
-const svg = generate_qr_svg(data, /*margin*/ 4, /*ecl*/ 'M', /*force_byte_mode*/ false, 256, 256);
-
-// PNG bytes
-const png = generate_qr_png(data, /*width px*/ 512, /*margin*/ 4, /*ecl*/ 'M', false);
-
-// Module matrix: [count_hi, count_lo, ...row_major_modules] (0 = light, 1 = dark)
-const matrix = generate_qr_matrix(data, /*margin*/ 4, /*ecl*/ 'M', false);
+const svg = generate_qr_svg(data, 4, 'M', false, 256, 256);
+const png = generate_qr_png(data, 512, 4, 'M', false);
+const matrix = generate_qr_matrix(data, 4, 'M', false);
 ```
 
-`ecl` accepts `"L"`, `"M"`, `"Q"`, or `"H"`. Setting `force_byte_mode` to `true`
-forces QR Byte mode so any binary payload (including non-UTF-8) round-trips safely.
-
-# Build WASM
-
-The WASM crate is built from source via `wasm-pack`:
-
-```bash
-cd fast-qr-wasm
-wasm-pack build --target web --release
-# wasm-pack pack pkg                 # Creates an npm archive
-# wasm-pack publish pkg              # Publishes the archive to npm
-```
-
-Generated artifacts (`fast_qr_wasm.js`, `fast_qr_wasm.d.ts`, `fast_qr_wasm_bg.wasm`)
-land in `fast-qr-wasm/pkg/`.
-
-## Benchmarks
-
-According to the following benchmarks, `fast_qr` is approximately 6-7x faster than `qrcode`.
-
-| Benchmark    |   Lower   | Estimate  |   Upper   |                         |
-| :----------- | :-------: | :-------: | :-------: | ----------------------- |
-| V03H/qrcode  | 524.30 us | 535.02 us | 547.13 us |                         |
-| V03H/fast_qr | 82.079 us | 82.189 us | 82.318 us | fast_qr is 6.51x faster |
-| V10H/qrcode  | 2.1105 ms | 2.1145 ms | 2.1186 ms |                         |
-| V10H/fast_qr | 268.70 us | 269.28 us | 269.85 us | fast_qr is 7.85x faster |
-| V40H/qrcode  | 18.000 ms | 18.037 ms | 18.074 ms |                         |
-| V40H/fast_qr | 2.4313 ms | 2.4362 ms | 2.4411 ms | fast_qr is 7.40x faster |
-
-More benchmarks can be found in [/benches folder](https://github.com/erwanvivien/fast_qr/tree/master/benches).
+`ecl` accepts `"L"`, `"M"`, `"Q"`, or `"H"`. Set `force_byte_mode` to `true`
+when encoding arbitrary binary payloads.
