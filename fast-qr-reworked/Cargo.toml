@@ -8,8 +8,8 @@ edition = "2024"
 [dependencies]
 
 [dev-dependencies]
-image        = { version = "0.25", default-features = false, features = ["png"] }
-resvg        = { version = "0.45", default-features = false }
-usvg         = { version = "0.45", default-features = false }
-tiny-skia    = "0.11"
+image        = { version = "0.25.10", default-features = false, features = ["png"] }
+resvg        = { version = "0.47", default-features = false }
+usvg         = { version = "0.47", default-features = false }
+tiny-skia    = "0.12"
 rxing-reader = { git = "https://github.com/andrewtheguy/rxing-reader", tag = "v0.0.7" }
