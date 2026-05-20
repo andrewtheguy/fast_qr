@@ -4,7 +4,6 @@
 #![warn(missing_docs)]
 
 use crate::hardcode;
-use crate::polynomials;
 use crate::{Version, ECL};
 
 /// Used in the ring, convert a^x using `LOG[x % 255]` to it's decimal Galois-Field value
@@ -122,7 +121,7 @@ pub fn structure(data: &[u8], quality: ECL, version: Version) -> [u8; 5430] {
 
     for i in 0..g1_count {
         let start_idx = i * g1_size;
-        let division = polynomials::division(&data[start_idx..start_idx + g1_size], error);
+        let division = division(&data[start_idx..start_idx + g1_size], error);
 
         for j in 0..error.len() - 1 {
             interleaved_data[start_error_idx + j * groups_count_total + i] =
@@ -132,7 +131,7 @@ pub fn structure(data: &[u8], quality: ECL, version: Version) -> [u8; 5430] {
 
     for i in 0..g2_count {
         let start_idx = g1_size * g1_count + i * g2_size;
-        let division = polynomials::division(&data[start_idx..start_idx + g2_size], error);
+        let division = division(&data[start_idx..start_idx + g2_size], error);
 
         for j in 0..error.len() - 1 {
             interleaved_data[start_error_idx + j * groups_count_total + i + g1_count] =

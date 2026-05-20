@@ -203,7 +203,7 @@ impl CompactQR {
             return;
         }
 
-        self.data[self.len / 8] += ((bits & KEEP_LAST[remaining]) as u8) << (8 - remaining);
+        self.data[self.len / 8] |= ((bits & KEEP_LAST[remaining]) as u8) << (8 - remaining);
         self.len += remaining;
     }
 

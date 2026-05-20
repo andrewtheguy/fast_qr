@@ -12,8 +12,13 @@ use crate::{Version, ECL};
 use core::iter::Rev;
 use core::ops::Range;
 
+/// Bidirectional iterator over a `Range<usize>`, used to traverse columns of
+/// the QR matrix either top-to-bottom or bottom-to-top while keeping a single
+/// concrete iterator type.
 pub enum BiRange {
+    /// Iterate the range in ascending order.
     Forward(Range<usize>),
+    /// Iterate the range in descending order.
     Backwards(Rev<Range<usize>>),
 }
 

@@ -1,5 +1,7 @@
 //! Converts a [`crate::QRCode`] to a simple black-and-white SVG.
 
+use core::fmt;
+
 use crate::QRCode;
 
 use super::Builder;
@@ -14,6 +16,28 @@ pub struct SvgBuilder {
 pub enum SvgError {
     /// Error while writing the SVG file.
     IoError(std::io::Error),
+}
+
+impl fmt::Display for SvgError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SvgError::IoError(e) => write!(f, "failed to write SVG: {}", e),
+        }
+    }
+}
+
+impl std::error::Error for SvgError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            SvgError::IoError(e) => Some(e),
+        }
+    }
+}
+
+impl From<std::io::Error> for SvgError {
+    fn from(err: std::io::Error) -> Self {
+        SvgError::IoError(err)
+    }
 }
 
 impl Default for SvgBuilder {
@@ -38,7 +62,7 @@ impl SvgBuilder {
             let line = &qr[y];
             for (x, &cell) in line.iter().enumerate() {
                 if cell.value() {
-                    path.push_str(&format!("M{},{}h1v1h-1", x + self.margin, y + self.margin));
+                    path.push_str(&format!("M{},{}h1v1h-1z", x + self.margin, y + self.margin));
                 }
             }
         }
