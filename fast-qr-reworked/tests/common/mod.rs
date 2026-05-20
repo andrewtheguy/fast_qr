@@ -56,7 +56,7 @@ pub fn render_qr_to_luma(qr: &QRCode, scale: u32, margin: u32) -> (Vec<u8>, u32,
 /// zone is added on all sides. Dark module -> 0, light module -> 255.
 pub fn render_qr_to_png_bytes(qr: &QRCode, scale: u32, margin: u32) -> Vec<u8> {
     let (buf, side, _) = render_qr_to_luma(qr, scale, margin);
-    let mut out = Vec::with_capacity(buf.len() / 4);
+    let mut out = Vec::new();
     PngEncoder::new(&mut out)
         .write_image(&buf, side, side, ExtendedColorType::L8)
         .expect("png encode");
