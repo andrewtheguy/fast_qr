@@ -20,7 +20,7 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: fast-qr-wasm/package-lock.json
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
       - run: npm ci
         working-directory: fast-qr-wasm
       - run: cargo clippy --workspace --all-targets

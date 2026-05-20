@@ -5,10 +5,6 @@ description = "Command-line QR encoder built on fast-qr-reworked."
 license = "MIT"
 edition = "2024"
 
-[[bin]]
-name = "fast-qr-cli"
-path = "src/main.rs"
-
 [dependencies]
 fast-qr-reworked = { path = "../fast-qr-reworked" }
 anyhow = "1.0"

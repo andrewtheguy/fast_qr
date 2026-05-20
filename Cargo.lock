@@ -285,7 +285,7 @@ dependencies = [
 
 [[package]]
 name = "fast-qr-cli"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "anyhow",
  "clap",
@@ -295,7 +295,7 @@ dependencies = [
 
 [[package]]
 name = "fast-qr-reworked"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "image",
  "resvg",
@@ -306,7 +306,7 @@ dependencies = [
 
 [[package]]
 name = "fast-qr-wasm"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "fast-qr-reworked",
  "png 0.17.16",

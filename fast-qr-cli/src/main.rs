@@ -21,7 +21,7 @@ struct Cli {
     data: Option<String>,
 
     /// Read raw bytes from a file. Use `-` to read from stdin.
-    #[arg(short, long, value_name = "PATH")]
+    #[arg(short, long, value_name = "PATH", conflicts_with = "data")]
     input: Option<PathBuf>,
 
     /// Output file. Defaults to stdout.
@@ -104,13 +104,7 @@ fn run() -> Result<()> {
 
 fn load_data(cli: &Cli) -> Result<Vec<u8>> {
     match (&cli.data, &cli.input) {
-        (Some(_), Some(_)) => Err(anyhow!(
-            "provide data as a positional argument OR via --input, not both"
-        )),
-        (None, None) => Err(anyhow!(
-            "no data: pass data as a positional argument or use --input <PATH|->"
-        )),
-        (Some(s), None) => Ok(s.clone().into_bytes()),
+        (Some(s), _) => Ok(s.clone().into_bytes()),
         (None, Some(path)) => {
             if path.as_os_str() == "-" {
                 let mut buf = Vec::new();
@@ -122,6 +116,9 @@ fn load_data(cli: &Cli) -> Result<Vec<u8>> {
                 std::fs::read(path).with_context(|| format!("failed to read {}", path.display()))
             }
         }
+        (None, None) => Err(anyhow!(
+            "no data: pass data as a positional argument or use --input <PATH|->"
+        )),
     }
 }
 
@@ -170,7 +167,10 @@ fn render_png(qr: &QRCode, margin: usize, scale: usize) -> Result<Vec<u8>> {
         return Err(anyhow!("--scale must be greater than 0"));
     }
     let qr_size = qr.size;
-    let full_modules = qr_size + 2 * margin;
+    let full_modules = margin
+        .checked_mul(2)
+        .and_then(|tw| qr_size.checked_add(tw))
+        .ok_or_else(|| anyhow!("PNG dimensions overflow"))?;
     let side = full_modules
         .checked_mul(scale)
         .ok_or_else(|| anyhow!("PNG dimensions overflow"))?;
