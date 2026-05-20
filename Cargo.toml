@@ -2,6 +2,7 @@
 members = [
   "fast-qr-reworked",
   "fast-qr-wasm",
+  "fast-qr-cli",
 ]
 resolver = "3"
 

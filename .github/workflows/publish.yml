@@ -72,8 +72,58 @@ jobs:
           path: fast-qr-wasm/pkg/*.tgz
           if-no-files-found: error
 
+  build-cli:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-amd64
+            bin: fast-qr-cli
+            archive_ext: tar.gz
+          - os: ubuntu-24.04-arm
+            target: linux-arm64
+            bin: fast-qr-cli
+            archive_ext: tar.gz
+          - os: macos-latest
+            target: macos-arm64
+            bin: fast-qr-cli
+            archive_ext: tar.gz
+          - os: windows-latest
+            target: windows-amd64
+            bin: fast-qr-cli.exe
+            archive_ext: zip
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: cargo build -p fast-qr-cli --release
+
+      - name: Package binary
+        shell: bash
+        env:
+          TAG: ${{ needs.prepare.outputs.tag }}
+          TARGET: ${{ matrix.target }}
+          BIN: ${{ matrix.bin }}
+          EXT: ${{ matrix.archive_ext }}
+        run: |
+          archive="fast-qr-cli-${TAG}-${TARGET}.${EXT}"
+          if [[ "${EXT}" == "zip" ]]; then
+            (cd target/release && 7z a "../../${archive}" "${BIN}")
+          else
+            tar -C target/release -czvf "${archive}" "${BIN}"
+          fi
+          echo "ARCHIVE=${archive}" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-${{ matrix.target }}
+          path: ${{ env.ARCHIVE }}
+          if-no-files-found: error
+
   publish:
-    needs: [prepare, build-wasm]
+    needs: [prepare, build-wasm, build-cli]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
