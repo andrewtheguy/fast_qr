@@ -18,13 +18,15 @@ jobs:
       - name: Read version from workspace Cargo.toml
         id: version
         run: |
-          version=$(awk -F'"' '
-            /^\[workspace\.package\]/ { in_section = 1; next }
-            /^\[/ { in_section = 0 }
-            in_section && /^version[[:space:]]*=/ { print $2; exit }
-          ' Cargo.toml)
-          if [ -z "$version" ]; then
-            echo "Failed to parse version from workspace Cargo.toml" >&2
+          set -euo pipefail
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "jq is required but not installed" >&2
+            exit 1
+          fi
+          metadata=$(cargo metadata --no-deps --format-version 1)
+          version=$(printf '%s' "$metadata" | jq -r '.packages[] | select(.name=="fast-qr-reworked") | .version')
+          if [ -z "$version" ] || [ "$version" = "null" ]; then
+            echo "Failed to extract version from cargo metadata" >&2
             exit 1
           fi
           tag="v${version}"

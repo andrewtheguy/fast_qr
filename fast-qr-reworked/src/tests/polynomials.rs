@@ -1,5 +1,5 @@
 /// Contains all possible generator polynomials (to compule error codewords)
-pub const GENERATOR_POLYNOMIALS: [&[u8]; 31] = [
+const GENERATOR_POLYNOMIALS: [&[u8]; 31] = [
     &[0],
     &[0, 0],
     &[0, 25, 1],
