@@ -183,8 +183,8 @@ impl QRCode {
 ///
 /// # Example
 /// ```rust
-/// use fast_qr::QRBuilder;
-/// use fast_qr::{Mask, ECL, Version};
+/// use fast_qr_reworked::QRBuilder;
+/// use fast_qr_reworked::{Mask, ECL, Version};
 ///
 /// // Creates a `QRCode` with a forced `version`, `ecl` and/or `mask`
 /// let input = String::from("Hello World!");

@@ -6,9 +6,9 @@
 //! required by the wasm wrapper.
 //!
 //! ```rust
-//! use fast_qr::convert::svg::SvgBuilder;
-//! use fast_qr::convert::Builder;
-//! use fast_qr::QRBuilder;
+//! use fast_qr_reworked::convert::svg::SvgBuilder;
+//! use fast_qr_reworked::convert::Builder;
+//! use fast_qr_reworked::QRBuilder;
 //!
 //! let qrcode = QRBuilder::new("https://example.com/").build().unwrap();
 //! let svg = SvgBuilder::default().margin(4).to_str(&qrcode);

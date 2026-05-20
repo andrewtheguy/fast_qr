@@ -1,7 +1,7 @@
-use fast_qr::convert::svg::SvgBuilder;
-use fast_qr::convert::Builder;
-use fast_qr::qr::QRCodeError;
-use fast_qr::{Mode, QRBuilder, QRCode, ECL};
+use fast_qr_reworked::convert::svg::SvgBuilder;
+use fast_qr_reworked::convert::Builder;
+use fast_qr_reworked::qr::QRCodeError;
+use fast_qr_reworked::{Mode, QRBuilder, QRCode, ECL};
 use png::{BitDepth, ColorType, Encoder};
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::{Reader, Writer};

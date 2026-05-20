@@ -1,11 +1,8 @@
-/target
-*encoder*.php
+node_modules/
+*.log
 
-*venv*
-tmp.py
-benches
+target/
+**/target/
+fast-qr-wasm/pkg/
 
-.idea
-.vscode
-
-*.wasm
+tmp/

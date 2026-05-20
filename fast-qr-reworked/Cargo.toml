@@ -1,0 +1,8 @@
+[package]
+name = "fast-qr-reworked"
+version.workspace = true
+description = "Trimmed QR matrix builder and SVG renderer fork of fast_qr for fast-qr-wasm."
+license = "MIT"
+edition = "2024"
+
+[dependencies]
