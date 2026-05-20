@@ -1,0 +1,5 @@
+- no backward compatibility at all for any changes
+- run `cargo clippy --workspace --all-targets` and `cargo test --workspace --release` after Rust code changes
+- run `npm run build` inside `fast-qr-wasm/` after changes that affect the published wasm package
+- no cargo fmt
+- always invoke wasm-pack through npm/npx so it resolves to the version pinned in `fast-qr-wasm/package.json` / `fast-qr-wasm/package-lock.json`; never use a system-wide cargo-installed wasm-pack binary

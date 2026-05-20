@@ -1,0 +1,15 @@
+[package]
+name = "fast-qr-reworked"
+version.workspace = true
+description = "Trimmed QR matrix builder and SVG renderer fork of fast_qr for fast-qr-wasm."
+license = "MIT"
+edition = "2024"
+
+[dependencies]
+
+[dev-dependencies]
+image        = { version = "0.25.10", default-features = false, features = ["png"] }
+resvg        = { version = "0.47", default-features = false }
+usvg         = { version = "0.47", default-features = false }
+tiny-skia    = "0.12"
+rxing-reader = { git = "https://github.com/andrewtheguy/rxing-reader", tag = "v0.0.7" }

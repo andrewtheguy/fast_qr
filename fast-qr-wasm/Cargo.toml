@@ -1,0 +1,16 @@
+[package]
+name = "fast-qr-wasm"
+version.workspace = true
+edition = "2024"
+description = "WASM QR generation wrapper around the trimmed fast-qr-reworked crate."
+license = "MIT"
+repository = "https://github.com/andrewtheguy/fast_qr"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+fast-qr-reworked = { path = "../fast-qr-reworked" }
+png = "0.17"
+quick-xml = "0.37"
