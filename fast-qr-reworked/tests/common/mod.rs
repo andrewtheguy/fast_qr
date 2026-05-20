@@ -2,8 +2,13 @@
 //!
 //! Pipeline:
 //!   QRBuilder -> QRCode
-//!     |-- render_qr_to_png_bytes -> PNG bytes -> decode_png_bytes -> Vec<Vec<u8>>
+//!     |-- render_qr_to_luma     -> luma bytes -> decode_luma         -> Vec<Vec<u8>>
+//!     |-- render_qr_to_png_bytes -> PNG bytes -> decode_png_bytes    -> Vec<Vec<u8>>
 //!     `-- SvgBuilder::to_str     -> SVG str   -> rasterize_svg_to_rgba -> decode_rgba
+
+// Each integration test binary pulls in this module, so any helper used by
+// only one of them looks dead to the others.
+#![allow(dead_code)]
 
 use std::io::Cursor;
 use std::path::PathBuf;
@@ -15,11 +20,13 @@ use fast_qr_reworked::{QRBuilder, QRCode};
 use image::codecs::png::PngEncoder;
 use image::{ExtendedColorType, ImageEncoder, ImageReader};
 
-/// Render `qr` to a single-channel grayscale PNG.
+/// Build a single-channel luma buffer (dark module -> 0, light -> 255) directly
+/// from the QR module matrix.
 ///
 /// Each module is scaled to `scale`x`scale` pixels and a `margin`-module quiet
-/// zone is added on all sides. Dark module -> 0, light module -> 255.
-pub fn render_qr_to_png_bytes(qr: &QRCode, scale: u32, margin: u32) -> Vec<u8> {
+/// zone is added on all sides. Used by the raw-matrix roundtrip test to bypass
+/// PNG/SVG rendering entirely.
+pub fn render_qr_to_luma(qr: &QRCode, scale: u32, margin: u32) -> (Vec<u8>, u32, u32) {
     let modules = qr.size as u32;
     let side = (modules + 2 * margin) * scale;
     let side_us = side as usize;
@@ -40,6 +47,15 @@ pub fn render_qr_to_png_bytes(qr: &QRCode, scale: u32, margin: u32) -> Vec<u8> {
         }
     }
 
+    (buf, side, side)
+}
+
+/// Render `qr` to a single-channel grayscale PNG.
+///
+/// Each module is scaled to `scale`x`scale` pixels and a `margin`-module quiet
+/// zone is added on all sides. Dark module -> 0, light module -> 255.
+pub fn render_qr_to_png_bytes(qr: &QRCode, scale: u32, margin: u32) -> Vec<u8> {
+    let (buf, side, _) = render_qr_to_luma(qr, scale, margin);
     let mut out = Vec::with_capacity(buf.len() / 4);
     PngEncoder::new(&mut out)
         .write_image(&buf, side, side, ExtendedColorType::L8)
@@ -92,6 +108,11 @@ pub fn decode_rgba(rgba: &[u8], w: u32, h: u32) -> Vec<Vec<u8>> {
     rxing_reader::decode_qr_codes_luma(&luma, w, h, false, false, false, 1).expect("decode")
 }
 
+/// Run a luma buffer directly through the rxing-reader QR pipeline.
+pub fn decode_luma(luma: &[u8], w: u32, h: u32) -> Vec<Vec<u8>> {
+    rxing_reader::decode_qr_codes_luma(luma, w, h, false, false, false, 1).expect("decode")
+}
+
 /// Table-driven roundtrip: build the QR, exercise both PNG and rasterized-SVG
 /// paths, assert each decodes back to the original `input` bytes.
 ///
@@ -126,6 +147,27 @@ pub fn assert_roundtrip(label: &str, input: &[u8], build: impl Fn(&mut QRBuilder
     assert_eq!(decoded[0], input, "{label}: SVG payload mismatch");
 
     dump_artifacts(label, &png, &svg);
+}
+
+/// Table-driven roundtrip that decodes the raw QR module matrix directly,
+/// bypassing PNG/SVG rendering. Isolates encoder correctness from any
+/// rendering bugs.
+pub fn assert_raw_matrix_roundtrip(label: &str, input: &[u8], build: impl Fn(&mut QRBuilder)) {
+    let mut b = QRBuilder::new(input.to_vec());
+    build(&mut b);
+    let qr = b.build().expect("qr build");
+
+    // 8 px/module, 4-module quiet zone — same geometry as the PNG path, but
+    // straight from qr.data into rxing without an intermediate codec.
+    let (luma, w, h) = render_qr_to_luma(&qr, 8, 4);
+    let decoded = decode_luma(&luma, w, h);
+    assert_eq!(
+        decoded.len(),
+        1,
+        "{label}: raw-matrix path produced {} decodes (expected 1)",
+        decoded.len()
+    );
+    assert_eq!(decoded[0], input, "{label}: raw-matrix payload mismatch");
 }
 
 /// Dump PNG and SVG artifacts under `CARGO_TARGET_TMPDIR/e2e/` for debugging.
