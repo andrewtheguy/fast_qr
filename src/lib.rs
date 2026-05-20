@@ -88,7 +88,6 @@ mod default;
 mod ecl;
 mod encode;
 mod hardcode;
-#[cfg(not(feature = "wasm-bindgen"))]
 mod helpers;
 mod module;
 mod placement;
@@ -100,9 +99,3 @@ mod version;
 
 #[cfg(test)]
 mod tests;
-
-#[cfg(target_arch = "wasm32")]
-mod wasm;
-
-#[cfg(target_arch = "wasm32")]
-pub use wasm::*;

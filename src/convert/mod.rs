@@ -29,31 +29,7 @@ use crate::Module;
 /// ```
 pub type ModuleFunction = fn(usize, usize, Module) -> String;
 
-#[cfg(all(target_arch = "wasm32", feature = "wasm-bindgen"))]
-use wasm_bindgen::prelude::*;
-
 /// Different possible Shapes to represent modules in a [`crate::QRCode`]
-#[repr(C)]
-#[wasm_bindgen]
-#[cfg(feature = "wasm-bindgen")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
-pub enum Shape {
-    /// Square Shape
-    Square,
-    /// Circle Shape
-    Circle,
-    /// RoundedSquare Shape
-    RoundedSquare,
-    /// Vertical Shape
-    Vertical,
-    /// Horizontal Shape
-    Horizontal,
-    /// Diamond Shape
-    Diamond,
-}
-
-/// Different possible Shapes to represent modules in a [`crate::QRCode`]
-#[cfg(not(feature = "wasm-bindgen"))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
 pub enum Shape {
     /// Square Shape
@@ -102,7 +78,6 @@ impl From<Shape> for usize {
             Shape::Vertical => 3,
             Shape::Horizontal => 4,
             Shape::Diamond => 5,
-            #[cfg(not(feature = "wasm-bindgen"))]
             Shape::Command(_) => 6,
         }
     }
@@ -133,7 +108,6 @@ impl From<Shape> for &str {
             Shape::Vertical => "vertical",
             Shape::Horizontal => "horizontal",
             Shape::Diamond => "diamond",
-            #[cfg(not(feature = "wasm-bindgen"))]
             Shape::Command(_) => "command",
         }
     }
@@ -180,7 +154,6 @@ impl Deref for Shape {
     fn deref(&self) -> &Self::Target {
         let index: usize = (*self).into();
         match self {
-            #[cfg(not(feature = "wasm-bindgen"))]
             Self::Command(func) => func,
             _ => &Self::FUNCTIONS[index],
         }
@@ -188,7 +161,6 @@ impl Deref for Shape {
 }
 
 /// Different possible image background shapes
-#[cfg_attr(feature = "wasm-bindgen", repr(C), wasm_bindgen)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
 pub enum ImageBackgroundShape {
     /// Square shape
@@ -220,7 +192,6 @@ impl From<SvgError> for ConvertError {
     fn from(err: SvgError) -> Self {
         match err {
             SvgError::SvgError(svg_err) => Self::Svg(svg_err),
-            #[cfg(not(feature = "wasm-bindgen"))]
             SvgError::IoError(io_err) => Self::Io(io_err),
         }
     }

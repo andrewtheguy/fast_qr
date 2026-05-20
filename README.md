@@ -98,66 +98,49 @@ fn main() -> Result<(), ConvertError> {
 
 ## JavaScript / Typescript
 
-### Installation
+WASM bindings live in the [`fast-qr-wasm`](./fast-qr-wasm) sub-crate. The exposed API
+is minimal and functional: three top-level helpers that take raw bytes and return
+either a PNG, an SVG string, or a packed module matrix.
 
-```bash
-npm install --save fast_qr
-# Or
-yarn add fast_qr
-```
-
-### Create an svg
+### Usage
 
 ```js
-/// Once `init` is called, `qr_svg` can be called any number of times
-import init, { qr_svg, SvgOptions, Shape } from '/pkg/fast_qr.js'
+import init, {
+  generate_qr_svg,
+  generate_qr_png,
+  generate_qr_matrix,
+} from './pkg/fast_qr_wasm.js';
 
-const options = new SvgOptions()
-  .margin(4)
-  .shape(Shape.Square)
-  .image("")  // Can be a URL or a base64 encoded image
-  .background_color("#b8a4e5")
-  .module_color("#ffffff");
-
-// Using then / catch:
-init()
-  .then(() => {
-    for (let i = 0; i < 10; i++) {
-      const svg = qr_svg("https://fast-qr.com", options);
-      console.log(svg);
-    }
-  })
-  .catch(console.error);
-
-// Or using modern async await:
 await init();
-for (let i = 0; i < 10; i++) {
-  const svg = qr_svg("https://fast-qr.com", options);
-  console.log(svg);
-}
+
+const data = new TextEncoder().encode('https://fast-qr.com');
+
+// SVG (optional explicit width / height attributes)
+const svg = generate_qr_svg(data, /*margin*/ 4, /*ecl*/ 'M', /*force_byte_mode*/ false, 256, 256);
+
+// PNG bytes
+const png = generate_qr_png(data, /*width px*/ 512, /*margin*/ 4, /*ecl*/ 'M', false);
+
+// Module matrix: [count_hi, count_lo, ...row_major_modules] (0 = light, 1 = dark)
+const matrix = generate_qr_matrix(data, /*margin*/ 4, /*ecl*/ 'M', false);
 ```
+
+`ecl` accepts `"L"`, `"M"`, `"Q"`, or `"H"`. Setting `force_byte_mode` to `true`
+forces QR Byte mode so any binary payload (including non-UTF-8) round-trips safely.
 
 # Build WASM
 
-### WASM module also exists in NPM registry
-
-Package is named `fast_qr` and can be installed like so :
-
-```
-npm install --save fast_qr
-```
-
-### WASM module might be bundled
-
-Find a bundled version in the latest [release](https://github.com/erwanvivien/fast_qr/releases).
-
-### WASM module can be built from source
+The WASM crate is built from source via `wasm-pack`:
 
 ```bash
-./wasm-pack.sh # Runs build in release mode and wasm-opt twice again
-wasm-pack pack pkg # Creates an archive of said package
-# wasm-pack publish pkg # Creates an archive & publish it to npm
+cd fast-qr-wasm
+wasm-pack build --target web --release
+# wasm-pack pack pkg                 # Creates an npm archive
+# wasm-pack publish pkg              # Publishes the archive to npm
 ```
+
+Generated artifacts (`fast_qr_wasm.js`, `fast_qr_wasm.d.ts`, `fast_qr_wasm_bg.wasm`)
+land in `fast-qr-wasm/pkg/`.
 
 ## Benchmarks
 

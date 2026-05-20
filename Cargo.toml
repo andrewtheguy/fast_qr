@@ -18,6 +18,9 @@ license = "MIT"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[workspace]
+members = ["fast-qr-wasm"]
+
 [dependencies]
 resvg = { version = "0.45.1", optional = true }
 
@@ -25,10 +28,6 @@ resvg = { version = "0.45.1", optional = true }
 [features]
 svg = []
 image = ["svg", "dep:resvg"]
-wasm-bindgen = ["dep:wasm-bindgen"]
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen = { version = "0.2", optional = true }
 
 [profile.release]
 debug = false
@@ -37,9 +36,6 @@ codegen-units = 1
 opt-level = 's'     # Optimize for size
 panic = 'abort'     # About unwinding code
 strip = "debuginfo"
-
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = ["-Oz"]
 
 [dev-dependencies]
 base64 = "0.22.1"
