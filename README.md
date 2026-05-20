@@ -1,8 +1,9 @@
 # fast_qr
 
 Standalone Rust workspace providing a trimmed QR-generation fork of
-[`fast_qr`](https://crates.io/crates/fast_qr) together with a thin
-`wasm-bindgen` wrapper that emits PNG, SVG, and raw module-matrix output.
+[`erwanvivien/fast_qr`](https://github.com/erwanvivien/fast_qr) together
+with a thin `wasm-bindgen` wrapper that emits PNG, SVG, and raw
+module-matrix output.
 
 ## Crates
 
@@ -96,6 +97,13 @@ npm run build
 `fast-qr-wasm/pkg/`. Always invoke `wasm-pack` through `npm`/`npx` so the
 pinned version is used; do not call a system-wide cargo-installed binary.
 
+## Upstream
+
+Forked from [`erwanvivien/fast_qr`](https://github.com/erwanvivien/fast_qr).
+The encoder paths and rendering targets unused by `fast-qr-wasm` have
+been removed; everything else descends from upstream.
+
 ## License
 
-MIT. See `LICENSE`.
+MIT. See `LICENSE`. Originally Copyright (c) 2023 Erwan VIVIEN; modifications
+by Andrew under the same MIT terms.
