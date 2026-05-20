@@ -83,7 +83,10 @@ fn matrix_score_squares(qr: &QRCode) -> u32 {
 /// We convert the line to a u11 (supposedly) so comparing it to a pattern is
 /// a simple comparison.
 fn line(line: &[Module]) -> (u32, u32) {
-    const PATTERN_LEN: usize = 7;
+    const PATTERN_LEN: usize = 11;
+    const PATTERN_PRE_LIGHT: u16 = 0b00001011101;
+    const PATTERN_POST_LIGHT: u16 = 0b10111010000;
+    const PATTERN_MASK: u16 = 0b11111111111;
 
     let mut line_score = 0;
     let mut patt_score = 0;
@@ -91,11 +94,11 @@ fn line(line: &[Module]) -> (u32, u32) {
     let mut count = 1;
     let mut current = !line[0].value();
 
-    let mut buffer = 0;
+    let mut buffer = 0u16;
     let mut count_data = 0;
 
     for &item in line {
-        buffer = ((buffer << 1) | u16::from(item.value())) & 0b111_1111;
+        buffer = ((buffer << 1) | u16::from(item.value())) & PATTERN_MASK;
         count_data += 1;
 
         if item.value() != current {
@@ -116,7 +119,9 @@ fn line(line: &[Module]) -> (u32, u32) {
             continue;
         }
 
-        if count_data >= PATTERN_LEN && buffer == 0b101_1101 {
+        if count_data >= PATTERN_LEN
+            && (buffer == PATTERN_PRE_LIGHT || buffer == PATTERN_POST_LIGHT)
+        {
             patt_score += 40;
         }
 

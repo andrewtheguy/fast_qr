@@ -46,12 +46,10 @@ fn example_com() {
     let dark_score = test_matrix_dark_modules(&mat);
     let square_score = test_matrix_score_squares(&mat);
 
-    // {"patternScore":160,"lineColScore":106,"squareScore":135,"darkScore":0}
-    // {"patternScore":240,"lineColScore":117,"squareScore":138,"darkScore":0}
     assert_eq!(dark_score, 0, "dark score, expected 0");
     assert_eq!(square_score, 138, "square score, expected 138");
     assert_eq!(line_score + col_score, 117, "line col score, expected 117");
-    assert_eq!(pattern_score, 240, "pattern score, expected 240");
+    assert_eq!(pattern_score, 80, "pattern score, expected 80");
 }
 
 #[rustfmt::skip]
@@ -94,11 +92,10 @@ fn fast_qr_com() {
     let dark_score = test_matrix_dark_modules(&mat);
     let square_score = test_matrix_score_squares(&mat);
 
-    // {"patternScore":80,"lineColScore":108,"squareScore":174,"darkScore":0}
     assert_eq!(dark_score, 0, "dark score, expected 0");
     assert_eq!(square_score, 174, "square score, expected 174");
     assert_eq!(line_score + col_score, 108, "line col score, expected 108");
-    assert_eq!(pattern_score, 80, "pattern score, expected 80");
+    assert_eq!(pattern_score, 40, "pattern score, expected 40");
 }
 
 #[rustfmt::skip]
@@ -174,11 +171,10 @@ fn xiaojiba_dev() {
     let dark_score = test_matrix_dark_modules(&mat);
     let square_score = test_matrix_score_squares(&mat);
 
-    // {"patternScore":160,"lineColScore":95,"squareScore":150,"darkScore":0}
     assert_eq!(dark_score, 0, "dark score, expected 0");
     assert_eq!(square_score, 150, "square score, expected 150");
     assert_eq!(line_score + col_score, 95, "line col score, expected 95");
-    assert_eq!(pattern_score, 160, "pattern score, expected 160");
+    assert_eq!(pattern_score, 0, "pattern score, expected 0");
 }
 
 #[test]
@@ -311,7 +307,7 @@ fn col_by_col_xiaojiba() {
 
 #[test]
 fn pattern() {
-    // Module data: true false true true true false true
+    // Bare 7-bit core `1011101` without 4-light flanking: per spec, no penalty.
     let line = [
         DATA(T),
         DATA(F),
@@ -322,9 +318,9 @@ fn pattern() {
         DATA(T),
     ];
 
-    assert_eq!(test_score_pattern(&line), 40, "pattern, expected 40");
+    assert_eq!(test_score_pattern(&line), 0, "no flanking, expected 0");
 
-    // Module data: true false true true true false true (double)
+    // Two bare cores `1011101 1011101`: still no 4-light flanking, expected 0.
     let line = [
         DATA(T),
         DATA(F),
@@ -342,15 +338,13 @@ fn pattern() {
         DATA(T),
     ];
 
-    assert_eq!(test_score_pattern(&line), 80, "pattern, expected 80");
+    assert_eq!(test_score_pattern(&line), 0, "no flanking, expected 0");
 
-    // Module data: true false true true true false true (double using middle)
+    // `0000 1011101`: 4 light modules then the 7-bit core → 40.
     let line = [
-        DATA(T),
         DATA(F),
-        DATA(T),
-        DATA(T),
-        DATA(T),
+        DATA(F),
+        DATA(F),
         DATA(F),
         DATA(T),
         DATA(F),
@@ -361,9 +355,47 @@ fn pattern() {
         DATA(T),
     ];
 
-    assert_eq!(test_score_pattern(&line), 80, "pattern, expected 80");
+    assert_eq!(test_score_pattern(&line), 40, "pre-light flanking, expected 40");
 
-    // Module data: true false true true true false true (double using middle)
+    // `1011101 0000`: 7-bit core then 4 light modules → 40.
+    let line = [
+        DATA(T),
+        DATA(F),
+        DATA(T),
+        DATA(T),
+        DATA(T),
+        DATA(F),
+        DATA(T),
+        DATA(F),
+        DATA(F),
+        DATA(F),
+        DATA(F),
+    ];
+
+    assert_eq!(test_score_pattern(&line), 40, "post-light flanking, expected 40");
+
+    // `0000 1011101 0000`: matches both pre- and post-light patterns → 80.
+    let line = [
+        DATA(F),
+        DATA(F),
+        DATA(F),
+        DATA(F),
+        DATA(T),
+        DATA(F),
+        DATA(T),
+        DATA(T),
+        DATA(T),
+        DATA(F),
+        DATA(T),
+        DATA(F),
+        DATA(F),
+        DATA(F),
+        DATA(F),
+    ];
+
+    assert_eq!(test_score_pattern(&line), 80, "both flanking, expected 80");
+
+    // Non-data module breaks the run; only 7 contiguous data modules available → 0.
     let line = [
         EMPT(F),
         DATA(T),
@@ -376,5 +408,5 @@ fn pattern() {
         EMPT(F),
     ];
 
-    assert_eq!(test_score_pattern(&line), 40, "pattern, expected 40");
+    assert_eq!(test_score_pattern(&line), 0, "broken run, expected 0");
 }
