@@ -80,7 +80,10 @@ const matrix = generate_qr_matrix(data, 4, "M", "auto");
 
 `ecl` accepts `"L"`, `"M"`, `"Q"`, or `"H"`. `mode` accepts `"auto"`,
 `"numeric"`, `"alphanumeric"`, or `"byte"`. `auto` picks the most compact
-encoding for the payload; pass `"byte"` for arbitrary binary data. See
+encoding for the payload; pass `"byte"` for arbitrary binary data. Both
+arguments are matched case-insensitively after trimming; any other value
+makes the call reject with an `Invalid error correction level` or
+`Invalid mode` error (no fallback to a default). See
 `fast-qr-wasm/src/lib.rs` for the full argument semantics.
 
 ## Using `fast-qr-cli` from the shell

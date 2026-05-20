@@ -306,6 +306,13 @@ pub fn generate_qr_svg(
 
 /// Generate a QR module matrix from raw bytes.
 ///
+/// - `data`: input payload bytes
+/// - `margin`: quiet zone in module units
+/// - `ecl`: one of "L", "M", "Q", "H"
+/// - `mode`: one of "auto", "numeric", "alphanumeric", "byte". `auto` picks
+///   the most compact mode for the payload; the other values pin a specific
+///   QR encoding mode (use "byte" for arbitrary binary data).
+///
 /// Returned bytes use this format:
 /// - Byte 0-1: module count (u16, big-endian), including quiet-zone margin
 /// - Remaining bytes: row-major module values where 0=light and 1=dark
@@ -897,6 +904,27 @@ mod tests {
         let err = generate_qr_matrix_internal(b"hello", 4, "INVALID", "auto")
             .expect_err("invalid ECL should fail");
         assert!(err.contains("Invalid error correction level"));
+    }
+
+    #[test]
+    fn rejects_invalid_mode_value() {
+        let err = generate_qr_png_internal(b"hello", 256, 4, "M", "invalid")
+            .expect_err("invalid mode should fail");
+        assert!(err.contains("Invalid mode"));
+    }
+
+    #[test]
+    fn rejects_invalid_mode_value_for_svg() {
+        let err = generate_qr_svg_internal(b"hello", 4, "M", "invalid", None, None)
+            .expect_err("invalid mode should fail");
+        assert!(err.contains("Invalid mode"));
+    }
+
+    #[test]
+    fn rejects_invalid_mode_value_for_matrix() {
+        let err = generate_qr_matrix_internal(b"hello", 4, "M", "invalid")
+            .expect_err("invalid mode should fail");
+        assert!(err.contains("Invalid mode"));
     }
 
     #[test]
