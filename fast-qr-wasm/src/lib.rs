@@ -30,14 +30,27 @@ fn map_png_error(error: png::EncodingError) -> String {
     format!("Failed to encode QR PNG: {error}")
 }
 
-fn build_qrcode(data: &[u8], ecl: &str, force_byte_mode: bool) -> Result<QRCode, String> {
+fn parse_mode(mode: &str) -> Result<Option<Mode>, String> {
+    match mode.trim().to_ascii_lowercase().as_str() {
+        "auto" => Ok(None),
+        "numeric" => Ok(Some(Mode::Numeric)),
+        "alphanumeric" => Ok(Some(Mode::Alphanumeric)),
+        "byte" => Ok(Some(Mode::Byte)),
+        _ => Err(
+            "Invalid mode. Expected one of: auto, numeric, alphanumeric, byte".to_string(),
+        ),
+    }
+}
+
+fn build_qrcode(data: &[u8], ecl: &str, mode: &str) -> Result<QRCode, String> {
     let parsed_ecl = parse_ecl(ecl)?;
+    let parsed_mode = parse_mode(mode)?;
 
     let mut qr_builder = QRBuilder::new(data.to_vec());
     qr_builder.ecl(parsed_ecl);
 
-    if force_byte_mode {
-        qr_builder.mode(Mode::Byte);
+    if let Some(m) = parsed_mode {
+        qr_builder.mode(m);
     }
 
     qr_builder.build().map_err(map_qr_error)
@@ -48,13 +61,13 @@ fn generate_qr_png_internal(
     width: u32,
     margin: u32,
     ecl: &str,
-    force_byte_mode: bool,
+    mode: &str,
 ) -> Result<Vec<u8>, String> {
     if width == 0 {
         return Err("Width must be greater than 0".to_string());
     }
 
-    let qrcode = build_qrcode(data, ecl, force_byte_mode)?;
+    let qrcode = build_qrcode(data, ecl, mode)?;
     let qr_size = qrcode.size as u32;
     let margin_modules = margin
         .checked_mul(2)
@@ -150,11 +163,11 @@ fn generate_qr_svg_internal(
     data: &[u8],
     margin: u32,
     ecl: &str,
-    force_byte_mode: bool,
+    mode: &str,
     svg_width: Option<u32>,
     svg_height: Option<u32>,
 ) -> Result<String, String> {
-    let qrcode = build_qrcode(data, ecl, force_byte_mode)?;
+    let qrcode = build_qrcode(data, ecl, mode)?;
     let qr_size = qrcode.size as u32;
     let margin_modules = margin
         .checked_mul(2)
@@ -184,9 +197,9 @@ fn generate_qr_matrix_internal(
     data: &[u8],
     margin: u32,
     ecl: &str,
-    force_byte_mode: bool,
+    mode: &str,
 ) -> Result<Vec<u8>, String> {
-    let qrcode = build_qrcode(data, ecl, force_byte_mode)?;
+    let qrcode = build_qrcode(data, ecl, mode)?;
     let qr_size = qrcode.size as u32;
     let margin_modules = margin
         .checked_mul(2)
@@ -253,16 +266,18 @@ fn generate_qr_matrix_internal(
 /// - `width`: target image width in pixels
 /// - `margin`: quiet zone in module units
 /// - `ecl`: one of "L", "M", "Q", "H"
-/// - `force_byte_mode`: when true, forces QR Byte mode for binary-safe payload encoding
+/// - `mode`: one of "auto", "numeric", "alphanumeric", "byte". `auto` picks
+///   the most compact mode for the payload; the other values pin a specific
+///   QR encoding mode (use "byte" for arbitrary binary data).
 #[wasm_bindgen]
 pub fn generate_qr_png(
     data: &[u8],
     width: u32,
     margin: u32,
     ecl: &str,
-    force_byte_mode: bool,
+    mode: &str,
 ) -> Result<Vec<u8>, JsValue> {
-    generate_qr_png_internal(data, width, margin, ecl, force_byte_mode)
+    generate_qr_png_internal(data, width, margin, ecl, mode)
         .map_err(|message| JsValue::from_str(&message))
 }
 
@@ -271,7 +286,9 @@ pub fn generate_qr_png(
 /// - `data`: input payload bytes
 /// - `margin`: quiet zone in module units
 /// - `ecl`: one of "L", "M", "Q", "H"
-/// - `force_byte_mode`: when true, forces QR Byte mode for binary-safe payload encoding
+/// - `mode`: one of "auto", "numeric", "alphanumeric", "byte". `auto` picks
+///   the most compact mode for the payload; the other values pin a specific
+///   QR encoding mode (use "byte" for arbitrary binary data).
 /// - `svg_width`: optional explicit width attribute for the SVG element
 /// - `svg_height`: optional explicit height attribute for the SVG element
 #[wasm_bindgen]
@@ -279,11 +296,11 @@ pub fn generate_qr_svg(
     data: &[u8],
     margin: u32,
     ecl: &str,
-    force_byte_mode: bool,
+    mode: &str,
     svg_width: Option<u32>,
     svg_height: Option<u32>,
 ) -> Result<String, JsValue> {
-    generate_qr_svg_internal(data, margin, ecl, force_byte_mode, svg_width, svg_height)
+    generate_qr_svg_internal(data, margin, ecl, mode, svg_width, svg_height)
         .map_err(|message| JsValue::from_str(&message))
 }
 
@@ -297,9 +314,9 @@ pub fn generate_qr_matrix(
     data: &[u8],
     margin: u32,
     ecl: &str,
-    force_byte_mode: bool,
+    mode: &str,
 ) -> Result<Vec<u8>, JsValue> {
-    generate_qr_matrix_internal(data, margin, ecl, force_byte_mode)
+    generate_qr_matrix_internal(data, margin, ecl, mode)
         .map_err(|message| JsValue::from_str(&message))
 }
 
@@ -349,9 +366,9 @@ mod tests {
         width: u32,
         margin: u32,
         ecl: &str,
-        force_byte_mode: bool,
+        mode: &str,
     ) -> RenderGeometry {
-        let qrcode = build_qrcode(payload, ecl, force_byte_mode).expect("QR build should succeed");
+        let qrcode = build_qrcode(payload, ecl, mode).expect("QR build should succeed");
         let qr_size = qrcode.size as u32;
         let module_count = qr_size
             .checked_add(margin.checked_mul(2).expect("margin module overflow"))
@@ -479,10 +496,10 @@ mod tests {
         width: u32,
         margin: u32,
         ecl: &str,
-        force_byte_mode: bool,
+        mode: &str,
     ) -> (DecodedPng, RenderGeometry) {
         let image = decode_png(png_bytes);
-        let geometry = build_render_geometry(payload, width, margin, ecl, force_byte_mode);
+        let geometry = build_render_geometry(payload, width, margin, ecl, mode);
 
         assert_eq!(image.width, image.height, "PNG output should be square");
         assert_eq!(
@@ -588,9 +605,9 @@ mod tests {
         payload: &[u8],
         margin: u32,
         ecl: &str,
-        force_byte_mode: bool,
+        mode: &str,
     ) -> u32 {
-        let qrcode = build_qrcode(payload, ecl, force_byte_mode).expect("QR build should succeed");
+        let qrcode = build_qrcode(payload, ecl, mode).expect("QR build should succeed");
         let qr_size = qrcode.size as u32;
         let module_count = qr_size
             .checked_add(margin.checked_mul(2).expect("margin module overflow"))
@@ -676,23 +693,23 @@ mod tests {
     #[test]
     fn generates_valid_png_for_text_payload() {
         let payload = b"https://example.com";
-        let png = generate_qr_png_internal(payload, 300, 4, "M", false)
+        let png = generate_qr_png_internal(payload, 300, 4, "M", "auto")
             .expect("QR generation should succeed");
 
         assert!(png.len() > 8, "PNG should not be empty");
         assert_eq!(&png[0..8], PNG_SIGNATURE, "PNG signature mismatch");
-        assert_png_raster_invariants(&png, payload, 300, 4, "M", false);
+        assert_png_raster_invariants(&png, payload, 300, 4, "M", "auto");
     }
 
     #[test]
     fn generates_valid_png_for_binary_payload_in_byte_mode() {
         let payload = [0x00, 0xFF, 0x80, 0x41, 0x42, 0x43, 0x7F, 0x10];
-        let png = generate_qr_png_internal(&payload, 256, 2, "Q", true)
+        let png = generate_qr_png_internal(&payload, 256, 2, "Q", "byte")
             .expect("Binary QR generation should succeed");
 
         assert!(png.len() > 8, "PNG should not be empty");
         assert_eq!(&png[0..8], PNG_SIGNATURE, "PNG signature mismatch");
-        assert_png_raster_invariants(&png, &payload, 256, 2, "Q", true);
+        assert_png_raster_invariants(&png, &payload, 256, 2, "Q", "byte");
     }
 
     #[test]
@@ -700,14 +717,14 @@ mod tests {
         let payload = b"png-margin-invariant";
 
         let png_no_margin =
-            generate_qr_png_internal(payload, 300, 0, "M", false).expect("margin 0 should work");
+            generate_qr_png_internal(payload, 300, 0, "M", "auto").expect("margin 0 should work");
         let png_margin_4 =
-            generate_qr_png_internal(payload, 300, 4, "M", false).expect("margin 4 should work");
+            generate_qr_png_internal(payload, 300, 4, "M", "auto").expect("margin 4 should work");
 
         let (image_no_margin, geometry_no_margin) =
-            assert_png_raster_invariants(&png_no_margin, payload, 300, 0, "M", false);
+            assert_png_raster_invariants(&png_no_margin, payload, 300, 0, "M", "auto");
         let (image_margin_4, geometry_margin_4) =
-            assert_png_raster_invariants(&png_margin_4, payload, 300, 4, "M", false);
+            assert_png_raster_invariants(&png_margin_4, payload, 300, 4, "M", "auto");
 
         let pattern_no_margin = extract_qr_module_pattern(&image_no_margin, &geometry_no_margin);
         let pattern_margin_4 = extract_qr_module_pattern(&image_margin_4, &geometry_margin_4);
@@ -722,15 +739,15 @@ mod tests {
     fn png_width_scaling_preserves_module_pattern() {
         let payload = b"png-width-invariant";
 
-        let png_narrow = generate_qr_png_internal(payload, 300, 4, "Q", false)
+        let png_narrow = generate_qr_png_internal(payload, 300, 4, "Q", "auto")
             .expect("narrow width should work");
         let png_wide =
-            generate_qr_png_internal(payload, 500, 4, "Q", false).expect("wide width should work");
+            generate_qr_png_internal(payload, 500, 4, "Q", "auto").expect("wide width should work");
 
         let (image_narrow, geometry_narrow) =
-            assert_png_raster_invariants(&png_narrow, payload, 300, 4, "Q", false);
+            assert_png_raster_invariants(&png_narrow, payload, 300, 4, "Q", "auto");
         let (image_wide, geometry_wide) =
-            assert_png_raster_invariants(&png_wide, payload, 500, 4, "Q", false);
+            assert_png_raster_invariants(&png_wide, payload, 500, 4, "Q", "auto");
 
         assert!(
             image_wide.width >= image_narrow.width,
@@ -752,7 +769,7 @@ mod tests {
 
     #[test]
     fn generates_valid_svg_for_text_payload() {
-        let svg = generate_qr_svg_internal(b"https://example.com", 4, "M", false, None, None)
+        let svg = generate_qr_svg_internal(b"https://example.com", 4, "M", "auto", None, None)
             .expect("SVG generation should succeed");
         assert_valid_svg(&svg);
     }
@@ -760,16 +777,16 @@ mod tests {
     #[test]
     fn generates_valid_svg_for_binary_payload_in_byte_mode() {
         let binary_payload = [0x00, 0xFF, 0x80, 0x41, 0x42, 0x43, 0x7F, 0x10];
-        let svg = generate_qr_svg_internal(&binary_payload, 2, "Q", true, None, None)
+        let svg = generate_qr_svg_internal(&binary_payload, 2, "Q", "byte", None, None)
             .expect("Binary SVG generation should succeed");
         assert_valid_svg(&svg);
     }
 
     #[test]
     fn svg_margin_changes_viewbox_size() {
-        let no_margin = generate_qr_svg_internal(b"margin-check", 0, "M", false, None, None)
+        let no_margin = generate_qr_svg_internal(b"margin-check", 0, "M", "auto", None, None)
             .expect("SVG generation without margin should succeed");
-        let with_margin = generate_qr_svg_internal(b"margin-check", 4, "M", false, None, None)
+        let with_margin = generate_qr_svg_internal(b"margin-check", 4, "M", "auto", None, None)
             .expect("SVG generation with margin should succeed");
 
         assert!(
@@ -781,32 +798,32 @@ mod tests {
     #[test]
     fn generates_valid_matrix_for_text_payload() {
         let payload = b"https://example.com";
-        let matrix = generate_qr_matrix_internal(payload, 4, "M", false)
+        let matrix = generate_qr_matrix_internal(payload, 4, "M", "auto")
             .expect("Matrix generation should succeed");
 
-        assert_matrix_invariants(&matrix, payload, 4, "M", false);
+        assert_matrix_invariants(&matrix, payload, 4, "M", "auto");
     }
 
     #[test]
     fn generates_valid_matrix_for_binary_payload_in_byte_mode() {
         let payload = [0x00, 0xFF, 0x80, 0x41, 0x42, 0x43, 0x7F, 0x10];
-        let matrix = generate_qr_matrix_internal(&payload, 2, "Q", true)
+        let matrix = generate_qr_matrix_internal(&payload, 2, "Q", "byte")
             .expect("Binary matrix generation should succeed");
 
-        assert_matrix_invariants(&matrix, &payload, 2, "Q", true);
+        assert_matrix_invariants(&matrix, &payload, 2, "Q", "byte");
     }
 
     #[test]
     fn matrix_margin_changes_module_count_and_offsets_qr_pattern() {
         let payload = b"matrix-margin-check";
 
-        let matrix_no_margin = generate_qr_matrix_internal(payload, 0, "M", false)
+        let matrix_no_margin = generate_qr_matrix_internal(payload, 0, "M", "auto")
             .expect("matrix generation with no margin should succeed");
-        let matrix_margin_4 = generate_qr_matrix_internal(payload, 4, "M", false)
+        let matrix_margin_4 = generate_qr_matrix_internal(payload, 4, "M", "auto")
             .expect("matrix generation with margin should succeed");
 
-        let no_margin_count = assert_matrix_invariants(&matrix_no_margin, payload, 0, "M", false);
-        let margin_count = assert_matrix_invariants(&matrix_margin_4, payload, 4, "M", false);
+        let no_margin_count = assert_matrix_invariants(&matrix_no_margin, payload, 0, "M", "auto");
+        let margin_count = assert_matrix_invariants(&matrix_margin_4, payload, 4, "M", "auto");
         let quiet_zone = 4u32;
 
         assert_eq!(
@@ -857,27 +874,27 @@ mod tests {
     #[test]
     fn rejects_zero_width() {
         let err =
-            generate_qr_png_internal(b"hello", 0, 4, "M", false).expect_err("width=0 should fail");
+            generate_qr_png_internal(b"hello", 0, 4, "M", "auto").expect_err("width=0 should fail");
         assert!(err.contains("Width must be greater than 0"));
     }
 
     #[test]
     fn rejects_invalid_ecl_value() {
-        let err = generate_qr_png_internal(b"hello", 256, 4, "INVALID", false)
+        let err = generate_qr_png_internal(b"hello", 256, 4, "INVALID", "auto")
             .expect_err("invalid ECL should fail");
         assert!(err.contains("Invalid error correction level"));
     }
 
     #[test]
     fn rejects_invalid_ecl_value_for_svg() {
-        let err = generate_qr_svg_internal(b"hello", 4, "INVALID", false, None, None)
+        let err = generate_qr_svg_internal(b"hello", 4, "INVALID", "auto", None, None)
             .expect_err("invalid ECL should fail");
         assert!(err.contains("Invalid error correction level"));
     }
 
     #[test]
     fn rejects_invalid_ecl_value_for_matrix() {
-        let err = generate_qr_matrix_internal(b"hello", 4, "INVALID", false)
+        let err = generate_qr_matrix_internal(b"hello", 4, "INVALID", "auto")
             .expect_err("invalid ECL should fail");
         assert!(err.contains("Invalid error correction level"));
     }
@@ -885,28 +902,28 @@ mod tests {
     #[test]
     fn rejects_when_qr_cannot_fit_target_width() {
         // Version 1 QR + default quiet zone cannot fit into width 8.
-        let err = generate_qr_png_internal(b"a", 8, 4, "M", false)
+        let err = generate_qr_png_internal(b"a", 8, 4, "M", "auto")
             .expect_err("width too small should fail");
         assert!(err.contains("QR cannot fit in target width"));
     }
 
     #[test]
     fn rejects_margin_overflow() {
-        let err = generate_qr_png_internal(b"a", 300, u32::MAX, "M", false)
+        let err = generate_qr_png_internal(b"a", 300, u32::MAX, "M", "auto")
             .expect_err("margin overflow should fail");
         assert!(err.contains("Margin is too large"));
     }
 
     #[test]
     fn rejects_margin_overflow_for_svg() {
-        let err = generate_qr_svg_internal(b"a", u32::MAX, "M", false, None, None)
+        let err = generate_qr_svg_internal(b"a", u32::MAX, "M", "auto", None, None)
             .expect_err("margin overflow should fail");
         assert!(err.contains("Margin is too large"));
     }
 
     #[test]
     fn rejects_margin_overflow_for_matrix() {
-        let err = generate_qr_matrix_internal(b"a", u32::MAX, "M", false)
+        let err = generate_qr_matrix_internal(b"a", u32::MAX, "M", "auto")
             .expect_err("margin overflow should fail");
         assert!(err.contains("Margin is too large"));
     }
@@ -919,7 +936,7 @@ mod tests {
 
     #[test]
     fn svg_with_both_width_and_height() {
-        let svg = generate_qr_svg_internal(b"dimension-test", 4, "M", false, Some(200), Some(300))
+        let svg = generate_qr_svg_internal(b"dimension-test", 4, "M", "auto", Some(200), Some(300))
             .expect("SVG with dimensions should succeed");
         assert_valid_svg(&svg);
         let tag = extract_svg_tag(&svg);
@@ -935,7 +952,7 @@ mod tests {
 
     #[test]
     fn svg_with_only_width() {
-        let svg = generate_qr_svg_internal(b"width-only", 4, "M", false, Some(150), None)
+        let svg = generate_qr_svg_internal(b"width-only", 4, "M", "auto", Some(150), None)
             .expect("SVG with width only should succeed");
         assert_valid_svg(&svg);
         let tag = extract_svg_tag(&svg);
@@ -951,7 +968,7 @@ mod tests {
 
     #[test]
     fn svg_with_only_height() {
-        let svg = generate_qr_svg_internal(b"height-only", 4, "M", false, None, Some(250))
+        let svg = generate_qr_svg_internal(b"height-only", 4, "M", "auto", None, Some(250))
             .expect("SVG with height only should succeed");
         assert_valid_svg(&svg);
         let tag = extract_svg_tag(&svg);
@@ -967,7 +984,7 @@ mod tests {
 
     #[test]
     fn svg_without_dimensions() {
-        let svg = generate_qr_svg_internal(b"no-dimensions", 4, "M", false, None, None)
+        let svg = generate_qr_svg_internal(b"no-dimensions", 4, "M", "auto", None, None)
             .expect("SVG without dimensions should succeed");
         assert_valid_svg(&svg);
         let tag = extract_svg_tag(&svg);

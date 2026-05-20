@@ -73,14 +73,15 @@ import init, {
 await init();
 
 const data = new TextEncoder().encode("https://fast-qr.com");
-const svg    = generate_qr_svg(data, 4, "M", false, 256, 256);
-const png    = generate_qr_png(data, 512, 4, "M", false);
-const matrix = generate_qr_matrix(data, 4, "M", false);
+const svg    = generate_qr_svg(data, 4, "M", "auto", 256, 256);
+const png    = generate_qr_png(data, 512, 4, "M", "auto");
+const matrix = generate_qr_matrix(data, 4, "M", "auto");
 ```
 
-`ecl` accepts `"L"`, `"M"`, `"Q"`, or `"H"`. Set `force_byte_mode` to
-`true` for arbitrary binary payloads. See `fast-qr-wasm/src/lib.rs` for
-the full argument semantics.
+`ecl` accepts `"L"`, `"M"`, `"Q"`, or `"H"`. `mode` accepts `"auto"`,
+`"numeric"`, `"alphanumeric"`, or `"byte"`. `auto` picks the most compact
+encoding for the payload; pass `"byte"` for arbitrary binary data. See
+`fast-qr-wasm/src/lib.rs` for the full argument semantics.
 
 ## Using `fast-qr-cli` from the shell
 
@@ -95,7 +96,8 @@ cargo run --release -p fast-qr-cli -- "https://example.com/" --format terminal
 The format is inferred from the `--output` extension (`.svg` or `.png`)
 and defaults to SVG when writing to stdout. Pass `--input -` to read raw
 bytes from stdin, `--ecl {L,M,Q,H}` to set the error correction level,
-`--byte-mode` to skip alphanumeric/numeric auto-detection, and
+`--mode {auto,numeric,alphanumeric,byte}` to pin the encoding mode
+(defaults to `auto`; pass `byte` for arbitrary binary payloads), and
 `--qr-version N` (1-40) to force a specific version. Run
 `fast-qr-cli --help` for the full argument list.
 
