@@ -479,11 +479,11 @@ fn placement() {
         }
 
         assert_eq!(results[results.len() - 1], mat[13][1].value());
-        assert_eq!(false, mat[14][0].value());
-        assert_eq!(false, mat[14][1].value());
-        assert_eq!(false, mat[15][0].value());
-        assert_eq!(false, mat[15][1].value());
-        assert_eq!(false, mat[16][0].value());
-        assert_eq!(false, mat[16][1].value());
+        assert!(!mat[14][0].value());
+        assert!(!mat[14][1].value());
+        assert!(!mat[15][0].value());
+        assert!(!mat[15][1].value());
+        assert!(!mat[16][0].value());
+        assert!(!mat[16][1].value());
     }
 }

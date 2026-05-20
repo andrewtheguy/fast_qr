@@ -150,7 +150,7 @@ fn encode_numeric_1() {
 
     // 13, '589'
     assert_eq!(res[1] & 0b0000_0011, 589 >> 8);
-    assert_eq!(res[2] & 0b1111_1111, (589 << 0) & keep_last[8]);
+    assert_eq!(res[2] & 0b1111_1111, 589 & keep_last[8]);
     // 24, '4'
     assert_eq!(res[3] & 0b1111_0000, (4 << 4) & keep_last[8]);
 }
@@ -173,7 +173,7 @@ fn encode_numeric_2() {
 
     // 13, '589'
     assert_eq!(res[1] & 0b0000_0011, 589 >> 8);
-    assert_eq!(res[2] & 0b1111_1111, (589 << 0) & keep_last[8]);
+    assert_eq!(res[2] & 0b1111_1111, 589 & keep_last[8]);
     // 24, '49'
     assert_eq!(res[3] & 0b1111_1110, 49 << 1 & keep_last[8]);
 }
@@ -196,7 +196,7 @@ fn encode_numeric_3() {
 
     // 13, '589'
     assert_eq!(res[1] & 0b0000_0011, 589 >> 8);
-    assert_eq!(res[2] & 0b1111_1111, (589 << 0) & keep_last[8]);
+    assert_eq!(res[2] & 0b1111_1111, 589 & keep_last[8]);
     // 24, '491'
     assert_eq!(res[3] & 0b1111_1111, (491 >> 2) & keep_last[8]);
     assert_eq!(res[4] & 0b1100_0000, (491 << 6) & keep_last[8]);
@@ -220,7 +220,7 @@ fn encode_numeric_4() {
 
     // 13, '200'
     assert_eq!(res[1] & 0b0000_0011, 200 >> 8);
-    assert_eq!(res[2] & 0b1111_1111, (200 << 0) & keep_last[8]);
+    assert_eq!(res[2] & 0b1111_1111, 200 & keep_last[8]);
     // 24, '505'
     assert_eq!(res[3] & 0b1111_1111, (505 >> 2) & keep_last[8]);
     assert_eq!(res[4] & 0b1100_0000, (505 << 6) & keep_last[8]);

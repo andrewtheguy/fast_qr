@@ -108,7 +108,7 @@ impl CompactQR {
     #[allow(dead_code)]
     #[cfg(test)]
     pub fn with_len(data_length: usize) -> Self {
-        let length = data_length / 8 + usize::from(data_length % 8 != 0);
+        let length = data_length / 8 + usize::from(!data_length.is_multiple_of(8));
         CompactQR {
             len: 0,
             data: vec![0; length],
