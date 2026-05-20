@@ -40,9 +40,10 @@ struct Cli {
     #[arg(long, default_value_t = 4)]
     margin: usize,
 
-    /// Force Byte mode (skip alphanumeric/numeric auto-detection).
-    #[arg(long)]
-    byte_mode: bool,
+    /// Encoding mode. `auto` picks the most compact of numeric/alphanumeric/byte
+    /// for the payload; the other values pin a specific mode.
+    #[arg(long, value_enum, ignore_case = true, default_value_t = CliMode::Auto)]
+    mode: CliMode,
 
     /// Force a specific QR version (1-40). Default: auto-selected for the data.
     #[arg(long, value_name = "N")]
@@ -79,6 +80,25 @@ impl From<CliEcl> for ECL {
             CliEcl::M => ECL::M,
             CliEcl::Q => ECL::Q,
             CliEcl::H => ECL::H,
+        }
+    }
+}
+
+#[derive(ValueEnum, Clone, Copy, Debug)]
+enum CliMode {
+    Auto,
+    Numeric,
+    Alphanumeric,
+    Byte,
+}
+
+impl CliMode {
+    fn explicit(self) -> Option<Mode> {
+        match self {
+            CliMode::Auto => None,
+            CliMode::Numeric => Some(Mode::Numeric),
+            CliMode::Alphanumeric => Some(Mode::Alphanumeric),
+            CliMode::Byte => Some(Mode::Byte),
         }
     }
 }
@@ -125,8 +145,8 @@ fn load_data(cli: &Cli) -> Result<Vec<u8>> {
 fn build_qr(data: &[u8], cli: &Cli) -> Result<QRCode> {
     let mut builder = QRBuilder::new(data.to_vec());
     builder.ecl(cli.ecl.into());
-    if cli.byte_mode {
-        builder.mode(Mode::Byte);
+    if let Some(mode) = cli.mode.explicit() {
+        builder.mode(mode);
     }
     if let Some(v) = cli.qr_version {
         if !(1..=40).contains(&v) {
