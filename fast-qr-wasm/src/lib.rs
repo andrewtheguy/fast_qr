@@ -3,8 +3,6 @@ use fast_qr_reworked::convert::Builder;
 use fast_qr_reworked::qr::QRCodeError;
 use fast_qr_reworked::{Mode, QRBuilder, QRCode, ECL};
 use png::{BitDepth, ColorType, Encoder};
-use quick_xml::events::{BytesStart, Event};
-use quick_xml::{Reader, Writer};
 use wasm_bindgen::prelude::*;
 
 fn parse_ecl(ecl: &str) -> Result<ECL, String> {
@@ -148,56 +146,6 @@ fn generate_qr_png_internal(
     Ok(png_data)
 }
 
-fn inject_svg_dimensions(
-    svg: &str,
-    width: Option<u32>,
-    height: Option<u32>,
-) -> Result<String, String> {
-    if width.is_none() && height.is_none() {
-        return Ok(svg.to_string());
-    }
-
-    let mut reader = Reader::from_str(svg);
-    let mut writer = Writer::new(Vec::new());
-
-    let mut svg_tag_found = false;
-    loop {
-        match reader.read_event() {
-            Ok(Event::Start(ref e)) if !svg_tag_found && e.name().as_ref() == b"svg" => {
-                svg_tag_found = true;
-                let mut elem = BytesStart::from(e.name());
-                for attr in e.attributes() {
-                    let attr = attr.map_err(|e| format!("SVG attribute error: {e}"))?;
-                    let key = attr.key.as_ref();
-                    if width.is_some() && key == b"width" {
-                        continue;
-                    }
-                    if height.is_some() && key == b"height" {
-                        continue;
-                    }
-                    elem.push_attribute(attr);
-                }
-                if let Some(w) = width {
-                    elem.push_attribute(("width", w.to_string().as_str()));
-                }
-                if let Some(h) = height {
-                    elem.push_attribute(("height", h.to_string().as_str()));
-                }
-                writer
-                    .write_event(Event::Start(elem))
-                    .map_err(|e| format!("SVG write error: {e}"))?;
-            }
-            Ok(Event::Eof) => break,
-            Ok(e) => writer
-                .write_event(e)
-                .map_err(|e| format!("SVG write error: {e}"))?,
-            Err(e) => return Err(format!("SVG parse error: {e}")),
-        }
-    }
-
-    String::from_utf8(writer.into_inner()).map_err(|e| format!("SVG UTF-8 error: {e}"))
-}
-
 fn generate_qr_svg_internal(
     data: &[u8],
     margin: u32,
@@ -223,8 +171,13 @@ fn generate_qr_svg_internal(
 
     let mut svg_builder = SvgBuilder::default();
     svg_builder.margin(margin_usize);
-    let svg = svg_builder.to_str(&qrcode);
-    inject_svg_dimensions(&svg, svg_width, svg_height)
+    if let Some(w) = svg_width {
+        svg_builder.width(w as usize);
+    }
+    if let Some(h) = svg_height {
+        svg_builder.height(h as usize);
+    }
+    Ok(svg_builder.to_str(&qrcode))
 }
 
 fn generate_qr_matrix_internal(
@@ -1025,30 +978,6 @@ mod tests {
         assert!(
             !tag.contains(r#"height=""#),
             "SVG tag should not contain height attribute"
-        );
-    }
-
-    #[test]
-    fn inject_svg_dimensions_replaces_existing_width_and_height() {
-        let input = r#"<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 50 50"><path d="M0,0"/></svg>"#;
-        let result = inject_svg_dimensions(input, Some(300), Some(300))
-            .expect("inject_svg_dimensions should succeed");
-        let tag = extract_svg_tag(&result);
-        assert!(
-            tag.contains(r#"width="300""#),
-            "SVG tag should contain the new width: {tag}"
-        );
-        assert!(
-            tag.contains(r#"height="300""#),
-            "SVG tag should contain the new height: {tag}"
-        );
-        assert!(
-            !tag.contains(r#"width="100""#),
-            "SVG tag should not contain the old width: {tag}"
-        );
-        assert!(
-            !tag.contains(r#"height="100""#),
-            "SVG tag should not contain the old height: {tag}"
         );
     }
 }
