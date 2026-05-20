@@ -1,9 +1,8 @@
 # fast_qr
 
-Standalone Rust workspace providing a trimmed QR-generation fork of
-[`erwanvivien/fast_qr`](https://github.com/erwanvivien/fast_qr) together
-with a thin `wasm-bindgen` wrapper that emits PNG, SVG, and raw
-module-matrix output.
+Rust workspace for QR code generation: a core library with SVG output
+and a `wasm-bindgen` wrapper that adds PNG and raw module-matrix output
+for the browser.
 
 ## Crates
 
