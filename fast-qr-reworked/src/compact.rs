@@ -69,7 +69,7 @@ impl Display for CompactQR {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         let mut res = String::with_capacity(self.len);
 
-        for i in 0..(self.data.capacity() / 8) {
+        for i in 0..self.data.len() {
             let nb = self.data[i];
             for j in 0..8 {
                 if i * 8 + j >= self.len {
@@ -99,7 +99,7 @@ impl CompactQR {
 
     pub fn from_version(version: Version) -> Self {
         let len = version.max_bytes();
-        let data = vec![0; len * 8];
+        let data = vec![0; len];
 
         CompactQR { len: 0, data }
     }
@@ -216,7 +216,9 @@ impl CompactQR {
         #[cfg(debug_assertions)]
         assert_eq!(self.len % 8, 0);
 
-        for (i, _) in (self.len..self.data.len()).step_by(8).enumerate() {
+        let used_bytes = self.len / 8;
+        let total_bytes = self.data.len();
+        for i in 0..total_bytes.saturating_sub(used_bytes) {
             let bits = PAD_BYTES[i % 2];
             self.push_u8(bits);
         }
