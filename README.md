@@ -1,17 +1,19 @@
 # fast_qr
 
-Rust workspace for QR code generation: a core library with SVG output
-and a `wasm-bindgen` wrapper that adds PNG and raw module-matrix output
-for the browser.
+QR code generator for Rust, the browser, and the command line. Encodes
+text or arbitrary bytes and renders to SVG, PNG, a raw module matrix, or
+a terminal-friendly string.
 
 ## Crates
 
-- `fast-qr-reworked`: the trimmed QR matrix builder plus the SVG renderer
-  required by the wasm wrapper.
-- `fast-qr-wasm`: `wasm-bindgen` wrapper around `fast-qr-reworked`.
-  Distributed as a `.tgz` attached to each
-  [GitHub release](https://github.com/andrewtheguy/fast_qr/releases) (not
-  published to the npm registry).
+- `fast-qr-reworked`: the QR matrix builder and SVG renderer. Use this
+  from Rust.
+- `fast-qr-wasm`: `wasm-bindgen` wrapper that exposes SVG, PNG, and raw
+  module-matrix output to JavaScript. Distributed as a `.tgz` attached
+  to each [GitHub release](https://github.com/andrewtheguy/fast_qr/releases)
+  (not published to the npm registry).
+- `fast-qr-cli`: command-line encoder that writes SVG, PNG, or a
+  terminal rendering to a file or stdout.
 
 ## Using `fast-qr-reworked` from Rust
 
@@ -79,6 +81,23 @@ const matrix = generate_qr_matrix(data, 4, "M", false);
 `ecl` accepts `"L"`, `"M"`, `"Q"`, or `"H"`. Set `force_byte_mode` to
 `true` for arbitrary binary payloads. See `fast-qr-wasm/src/lib.rs` for
 the full argument semantics.
+
+## Using `fast-qr-cli` from the shell
+
+Build and run the CLI from this workspace:
+
+```sh
+cargo run --release -p fast-qr-cli -- "https://example.com/" -o qr.svg
+cargo run --release -p fast-qr-cli -- "https://example.com/" -o qr.png --scale 10
+cargo run --release -p fast-qr-cli -- "https://example.com/" --format terminal
+```
+
+The format is inferred from the `--output` extension (`.svg` or `.png`)
+and defaults to SVG when writing to stdout. Pass `--input -` to read raw
+bytes from stdin, `--ecl {L,M,Q,H}` to set the error correction level,
+`--byte-mode` to skip alphanumeric/numeric auto-detection, and
+`--qr-version N` (1-40) to force a specific version. Run
+`fast-qr-cli --help` for the full argument list.
 
 ## Build and test
 
