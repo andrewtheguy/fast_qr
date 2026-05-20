@@ -9,6 +9,8 @@ use super::Builder;
 /// Builder for SVG QR output.
 pub struct SvgBuilder {
     margin: usize,
+    width: Option<usize>,
+    height: Option<usize>,
 }
 
 /// Possible errors when writing SVG output.
@@ -42,7 +44,11 @@ impl From<std::io::Error> for SvgError {
 
 impl Default for SvgBuilder {
     fn default() -> Self {
-        Self { margin: 4 }
+        Self {
+            margin: 4,
+            width: None,
+            height: None,
+        }
     }
 }
 
@@ -54,6 +60,18 @@ impl Builder for SvgBuilder {
 }
 
 impl SvgBuilder {
+    /// Sets an explicit `width` attribute on the root `<svg>` element.
+    pub fn width(&mut self, width: usize) -> &mut Self {
+        self.width = Some(width);
+        self
+    }
+
+    /// Sets an explicit `height` attribute on the root `<svg>` element.
+    pub fn height(&mut self, height: usize) -> &mut Self {
+        self.height = Some(height);
+        self
+    }
+
     fn path(&self, qr: &QRCode) -> String {
         let mut path = String::with_capacity(10 * qr.size * qr.size);
         path.push_str(r#"<path d=""#);
@@ -77,8 +95,15 @@ impl SvgBuilder {
         let size = self.margin * 2 + qr.size;
         let mut out = String::with_capacity(11 * qr.size * qr.size / 2);
 
+        out.push_str("<svg");
+        if let Some(w) = self.width {
+            out.push_str(&format!(r#" width="{w}""#));
+        }
+        if let Some(h) = self.height {
+            out.push_str(&format!(r#" height="{h}""#));
+        }
         out.push_str(&format!(
-            r#"<svg viewBox="0 0 {0} {0}" xmlns="http://www.w3.org/2000/svg">"#,
+            r#" viewBox="0 0 {0} {0}" xmlns="http://www.w3.org/2000/svg">"#,
             size
         ));
         out.push_str(&format!(
